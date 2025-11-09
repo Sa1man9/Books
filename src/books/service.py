@@ -2,15 +2,16 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from .schemas import BookCreateModel,BookUpdateModel
 from sqlmodel import select,desc
 from .models import Book
+from datetime import datetime
 
 class BookService:
     async def get_all_Books(self,session:AsyncSession):
-        statement= select(Book).order_by(desc(Book.created_at))
+        statement= select(Book)
         res=await session.exec(statement)
         return res.all()
 
-    async def get_Book(self,book_uuid:str,session:AsyncSession):
-        statement= select(Book).where(Book.uid==book_uuid)
+    async def get_Book(self,book_uid:str,session:AsyncSession):
+        statement= select(Book).where(Book.uid==book_uid)
         res=await session.exec(statement)
         book= res.first()
         
@@ -23,6 +24,8 @@ class BookService:
             **book_data_dict
         )
 
+        # new_book.published_date = datetime.strptime(book_data_dict['published_date'],"%Y-%m-%d")
+
         session.add(new_book)
 
         await session.commit()
@@ -30,7 +33,7 @@ class BookService:
         return new_book
 
     async def update_Book(self,book_uid:str,update_data:BookUpdateModel,session:AsyncSession):
-        book_to_update=self.get_Book(book_uid, session)
+        book_to_update=await self.get_Book(book_uid, session)
 
         if book_to_update is not None:
 
@@ -46,7 +49,7 @@ class BookService:
             return None
     
     async def delete_Book(self,book_uid:str,session:AsyncSession):
-        book_to_delete=self.get_Book(book_uid, session)
+        book_to_delete=await self.get_Book(book_uid, session)
 
         if book_to_delete is not None:
 
@@ -54,6 +57,6 @@ class BookService:
 
             await session.commit()
 
-            return 
+            return {}
         else:
             return None
